@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Tracker - Powerbuilding Pro</title>
+    <style>
+        :root {
+            --bg-color: #0f1115;
+            --card-bg: #181c24;
+            --accent: #f59e0b;
+            --accent-hover: #d97706;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border: #2d3748;
+            --success: #10b981;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 12px; max-width: 600px; margin: 0 auto; padding-bottom: 90px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 12px; }
+        .logo-area { display: flex; align-items: center; gap: 10px; }
+        .logo-icon { background: var(--accent); color: #000; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: bold; font-size: 18px; }
+        .logo-text h1 { font-size: 16px; font-weight: 800; letter-spacing: 0.5px; }
+        .logo-text span { font-size: 11px; color: var(--accent); font-weight: 600; text-transform: uppercase; }
+        
+        .controls-top { display: flex; gap: 8px; align-items: center; }
+        select, .btn-icon { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; font-size: 13px; font-weight: 600; outline: none; }
+        .btn-icon { background: var(--card-bg); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-icon:hover { border-color: var(--accent); }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: var(--card-bg); border: 1px solid var(--border); padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; }
+        .modal-content h3 { margin-bottom: 15px; font-size: 16px; color: var(--accent); }
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+        .input-group input { width: 100%; padding: 8px; background: var(--bg-color); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; font-size: 14px; }
+        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-primary { background: var(--accent); color: #000; border: none; padding: 10px; border-radius: 8px; font-weight: bold; flex: 1; cursor: pointer; }
+        .btn-secondary { background: var(--border); color: var(--text-main); border: none; padding: 10px; border-radius: 8px; font-weight: bold; flex: 1; cursor: pointer; }
+
+        .progress-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; }
+        .progress-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--accent); }
+        .progress-body { margin-top: 10px; display: none; font-size: 12px; }
+        .progress-body.open { display: block; }
+        .bar-container { background: var(--bg-color); border-radius: 6px; height: 8px; margin: 6px 0 10px 0; overflow: hidden; border: 1px solid var(--border); }
+        .bar-fill { background: var(--accent); height: 100%; width: 0%; transition: width 0.5s ease; }
+
+        .day-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px; }
+        .day-tab { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-muted); padding: 10px 4px; border-radius: 8px; font-size: 11px; font-weight: 700; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .day-tab.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+        .workout-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .week-indicator { font-size: 11px; text-transform: uppercase; color: var(--accent); font-weight: 800; letter-spacing: 1px; margin-bottom: 4px; }
+        .workout-title { font-size: 18px; font-weight: 800; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+        .exercise-card { background: var(--bg-color); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+        .ex-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .ex-name { font-size: 14px; font-weight: 700; }
+        .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: rgba(245, 158, 11, 0.15); color: var(--accent); }
+        .badge.aesthetic { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        
+        .auto-target { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; background: rgba(255,255,255,0.03); padding: 6px 10px; border-radius: 6px; border-left: 3px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
+        .auto-target span { color: var(--text-main); font-weight: bold; }
+
+        .set-row { display: grid; grid-template-columns: 50px 1fr 1fr 40px; gap: 6px; align-items: center; margin-bottom: 6px; }
+        .set-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+        .set-input { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); padding: 6px; border-radius: 6px; text-align: center; font-size: 13px; width: 100%; outline: none; }
+        .set-input:focus { border-color: var(--accent); }
+        
+        .checkbox-container { display: flex; align-items: center; justify-content: center; }
+        .set-check { width: 22px; height: 22px; accent-color: var(--accent); cursor: pointer; }
+
+        .timer-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg); border-top: 1px solid var(--border); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; max-width: 600px; margin: 0 auto; z-index: 99; }
+        .timer-display { font-size: 18px; font-weight: 800; font-family: monospace; color: var(--accent); }
+        .timer-btns { display: flex; gap: 6px; }
+        .t-btn { background: var(--bg-color); border: 1px solid var(--border); color: var(--text-main); padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .t-btn.start { background: var(--accent); color: #000; border: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo-area">
+            <div class="logo-icon">⚡</div>
+            <div class="logo-text">
+                <h1>APEX TRACKER</h1>
+                <span>Powerbuilding Pro</span>
+            </div>
+        </div>
+        <div class="controls-top">
+            <button class="btn-icon" onclick="openModal()" title="1RM Werte anpassen">⚙️</button>
+            <select id="weekSelect" onchange="changeWeek()">
+                <option value="1">Woche 1 (Volumen / 5er)</option>
+                <option value="2">Woche 2 (Volumen steigern / 4er)</option>
+                <option value="3">Woche 3 (Intensivieren / 3er)</option>
+                <option value="4">Woche 4 (Deload)</option>
+                <option value="5">Woche 5 (Kraftaufbau / 3er)</option>
+                <option value="6">Woche 6 (Kraftintensivierung / 2er)</option>
+                <option value="7">Woche 7 (Spezifische Vorbereitung)</option>
+                <option value="8">Woche 8 (TESTWOCHE PR!)</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="rmModal" class="modal">
+        <div class="modal-content">
+            <h3>Zyklus & 1RM-Werte aktualisieren</h3>
+            <div class="input-group">
+                <label>Aktuelles 1RM Kniebeuge (Squat) in kg</label>
+                <input type="number" id="inputSquat" value="130">
+            </div>
+            <div class="input-group">
+                <label>Aktuelles 1RM Bankdrücken (Bench) in kg</label>
+                <input type="number" id="inputBench" value="120">
+            </div>
+            <div class="input-group">
+                <label>Aktuelles 1RM Kreuzheben (Deadlift) in kg</label>
+                <input type="number" id="inputDeadlift" value="165">
+            </div>
+            <div class="input-group">
+                <label>Aktuelles Zusatzgewicht Pullup (max) in kg</label>
+                <input type="number" id="inputPullup" value="33">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-secondary" onclick="closeModal()">Abbrechen</button>
+                <button class="btn-primary" onclick="saveNewRMs()">Speichern</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="progress-box">
+        <div class="progress-header" onclick="toggleProgress()">
+            <span>📈 ZIEL-TRACKER (140 / 130 / 200 / +50)</span>
+            <span id="accordionArrow">▼</span>
+        </div>
+        <div class="progress-body" id="progressBody">
+            <div style="margin-top: 8px;">Squat (<span id="txtSquat">130</span>kg ➔ 140kg Ziel)</div>
+            <div class="bar-container"><div class="bar-fill" id="barSquat" style="width: 85%;"></div></div>
+            
+            <div>Bench (<span id="txtBench">120</span>kg ➔ 130kg Ziel)</div>
+            <div class="bar-container"><div class="bar-fill" id="barBench" style="width: 80%;"></div></div>
+            
+            <div>Deadlift (<span id="txtDeadlift">165</span>kg ➔ 200kg Ziel)</div>
+            <div class="bar-container"><div class="bar-fill" id="barDeadlift" style="width: 60%;"></div></div>
+            
+            <div>Pullup (+<span id="txtPullup">33</span>kg ➔ +50kg Ziel)</div>
+            <div class="bar-container"><div class="bar-fill" id="barPullup" style="width: 66%;"></div></div>
+        </div>
+    </div>
+
+    <div class="day-tabs">
+        <div class="day-tab active" onclick="switchDay(1)" id="tab1">Tag 1<br>Lower A</div>
+        <div class="day-tab" onclick="switchDay(2)" id="tab2">Tag 2<br>Upper A</div>
+        <div class="day-tab" onclick="switchDay(3)" id="tab3">Tag 3<br>Lower B</div>
+        <div class="day-tab" onclick="switchDay(4)" id="tab4">Tag 4<br>Upper B</div>
+    </div>
+
+    <div class="workout-container">
+        <div class="week-indicator" id="weekIndicatorDisplay">Woche 1: Volumen aufbauen</div>
+        <div class="workout-title" id="workoutTitle">Tag 1 – Unterkörper A (Kniebeuge schwer)</div>
+        <div id="exerciseList"></div>
+    </div>
+
+    <div class="timer-bar">
+        <div>
+            <div style="font-size: 10px; color: var(--text-muted);">SATZPAUSE TIMER</div>
+            <div class="timer-display" id="timerDisplay">03:00</div>
+        </div>
+        <div class="timer-btns">
+            <button class="t-btn" onclick="setTimer(90)">1.5m</button>
+            <button class="t-btn" onclick="setTimer(180)">3m</button>
+            <button class="t-btn" onclick="setTimer(300)">5m</button>
+            <button class="t-btn start" id="timerStartBtn" onclick="toggleTimer()">START</button>
+        </div>
+    </div>
+
+    <script>
+        let userRMs = JSON.parse(localStorage.getItem('apex_rms')) || {
+            squat: 130,
+            bench: 120,
+            deadlift: 165,
+            pullup: 33
+        };
+
+        let currentDay = 1;
+        let currentWeek = 1;
+
+        const workouts = {
+            1: { title: "Tag 1 – Unterkörper A (Kniebeuge schwer)", exercises: [
+                { name: "Kniebeuge (Squat)", type: "main", rmKey: "squat", sets: 4, basePercent: [0.72, 0.70, 0.70, 0.70] },
+                { name: "Rumänisches Kreuzheben (RDL)", type: "iso", sets: 3, reps: "6-10 Wdh", rpe: "RPE 8" },
+                { name: "Beinstrecker", type: "iso", sets: 3, reps: "10-15 Wdh", rpe: "RPE 9", aesthetic: true },
+                { name: "Sitzender Beinbeuger", type: "iso", sets: 3, reps: "10-15 Wdh", rpe: "RPE 9", aesthetic: true },
+                { name: "Stehendes Wadenheben", type: "iso", sets: 3, reps: "8-15 Wdh", rpe: "RPE 9.5", aesthetic: true }
+            ]},
+            2: { title: "Tag 2 – Oberkörper A (Bankdrücken schwer)", exercises: [
+                { name: "Wettkampf-Bankdrücken", type: "main", rmKey: "bench", sets: 4, basePercent: [0.72, 0.70, 0.70, 0.70] },
+                { name: "Klimmzüge mit Zusatzgewicht", type: "iso", sets: 3, reps: "5-8 Wdh", rpe: "RPE 8", aesthetic: true },
+                { name: "Brustgestütztes Rudern", type: "iso", sets: 3, reps: "8-12 Wdh", rpe: "RPE 8.5", aesthetic: true },
+                { name: "Schrägbank-Kurzhanteldrücken", type: "iso", sets: 3, reps: "8-12 Wdh", rpe: "RPE 9", aesthetic: true },
+                { name: "Kabel-Seitheben", type: "iso", sets: 3, reps: "12-20 Wdh", rpe: "RPE 9.5", aesthetic: true },
+                { name: "Trizepsdrücken am Kabel", type: "iso", sets: 2, reps: "10-15 Wdh", rpe: "RPE 9", aesthetic: true }
+            ]},
+            3: { title: "Tag 3 – Unterkörper B (Kreuzheben schwer)", exercises: [
+                { name: "Kreuzheben (Deadlift)", type: "main", rmKey: "deadlift", sets: 4, basePercent: [0.72, 0.70, 0.70, 0.70] },
+                { name: "Pausenkniebeuge", type: "iso", sets: 3, reps: "4-6 Wdh", rpe: "RPE 7.5" },
+                { name: "Sitzender Beinbeuger", type: "iso", sets: 3, reps: "8-12 Wdh", rpe: "RPE 9", aesthetic: true },
+                { name: "Sitzendes Wadenheben", type: "iso", sets: 3, reps: "10-20 Wdh", rpe: "RPE 9.5", aesthetic: true },
+                { name: "Kabel-Crunch / Ab-Rollout", type: "iso", sets: 3, reps: "8-15 Wdh", rpe: "RPE 9" }
+            ]},
+            4: { title: "Tag 4 – Oberkörper B (Bank-Volumen & Rücken)", exercises: [
+                { name: "Pausenbankdrücken (1-2s Stopp)", type: "main", rmKey: "bench", sets: 3, basePercent: [0.65, 0.65, 0.65], targetReps: "5-8" },
+                { name: "Latzug (neutraler Griff)", type: "iso", sets: 3, reps: "8-12 Wdh", rpe: "RPE 8.5", aesthetic: true },
+                { name: "Kabelrudern", type: "iso", sets: 3, reps: "8-12 Wdh", rpe: "RPE 8.5", aesthetic: true },
+                { name: "Schulterdrücken", type: "iso", sets: 2, reps: "6-10 Wdh", rpe: "RPE 8.5", aesthetic: true },
+                { name: "Reverse Flys", type: "iso", sets: 3, reps: "12-20 Wdh", rpe: "RPE 9.5", aesthetic: true },
+                { name: "Bizepscurls", type: "iso", sets: 3, reps: "8-15 Wdh", rpe: "RPE 9", aesthetic: true }
+            ]}
+        };
+
+        function initApp() {
+            document.getElementById('inputSquat').value = userRMs.squat;
+            document.getElementById('inputBench').value = userRMs.bench;
+            document.getElementById('inputDeadlift').value = userRMs.deadlift;
+            document.getElementById('inputPullup').value = userRMs.pullup;
+            updateProgressBars();
+            renderWorkout();
+        }
+
+        function updateProgressBars() {
+            document.getElementById('txtSquat').innerText = userRMs.squat;
+            document.getElementById('txtBench').innerText = userRMs.bench;
+            document.getElementById('txtDeadlift').innerText = userRMs.deadlift;
+            document.getElementById('txtPullup').innerText = userRMs.pullup;
+            document.getElementById('barSquat').style.width = Math.min(100, (userRMs.squat / 140) * 100) + '%';
+            document.getElementById('barBench').style.width = Math.min(100, (userRMs.bench / 130) * 100) + '%';
+            document.getElementById('barDeadlift').style.width = Math.min(100, (userRMs.deadlift / 200) * 100) + '%';
+            document.getElementById('barPullup').style.width = Math.min(100, (userRMs.pullup / 50) * 100) + '%';
+        }
+
+        function openModal() { document.getElementById('rmModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('rmModal').style.display = 'none'; }
+
+        function saveNewRMs() {
+            userRMs.squat = parseFloat(document.getElementById('inputSquat').value) || userRMs.squat;
+            userRMs.bench = parseFloat(document.getElementById('inputBench').value) || userRMs.bench;
+            userRMs.deadlift = parseFloat(document.getElementById('inputDeadlift').value) || userRMs.deadlift;
+            userRMs.pullup = parseFloat(document.getElementById('inputPullup').value) || userRMs.pullup;
+            localStorage.setItem('apex_rms', JSON.stringify(userRMs));
+            updateProgressBars();
+            closeModal();
+            renderWorkout();
+        }
+
+        function toggleProgress() {
+            const body = document.getElementById('progressBody');
+            const arrow = document.getElementById('accordionArrow');
+            body.classList.toggle('open');
+            arrow.innerText = body.classList.contains('open') ? '▲' : '▼';
+        }
+
+        function switchDay(day) {
+            currentDay = day;
+            document.querySelectorAll('.day-tab').forEach((el, idx) => {
+                el.classList.toggle('active', idx + 1 === day);
+            });
+            renderWorkout();
+        }
+
+        function changeWeek() {
+            currentWeek = parseInt(document.getElementById('weekSelect').value);
+            const weeksText = [
+                "", 
+                "Woche 1: Volumen aufbauen (5er)", 
+                "Woche 2: Volumen steigern (4er)", 
+                "Woche 3: Intensivieren (3er)", 
+                "Woche 4: Deload (Erholung)", 
+                "Woche 5: Kraftaufbau (3er)", 
+                "Woche 6: Kraftintensivierung (2er)", 
+                "Woche 7: Spezifische Vorbereitung", 
+                "Woche 8: Leistungsüberprüfung (PR!)"
+            ];
+            document.getElementById('weekIndicatorDisplay').innerText = weeksText[currentWeek];
+            renderWorkout();
+        }
+
+        function renderWorkout() {
+            const wData = workouts[currentDay];
+            document.getElementById('workoutTitle').innerText = wData.title;
+            const container = document.getElementById('exerciseList');
+            container.innerHTML = '';
+
+            // Periodisierungs-Logik für Hauptlifts (Top-Set + Back-offs gemäß Tabellenkonzept)
+            let topSetPct = 0.75;
+            let topSetReps = "5";
+            let topSetRpe = "RPE 7";
+            let backoffPct = 0.72;
+            let backoffReps = "5";
+
+            if (currentWeek === 1) { topSetPct = 0.75; topSetReps = "5"; topSetRpe = "RPE 7"; backoffPct = 0.72; backoffReps = "5"; }
+            else if (currentWeek === 2) { topSetPct = 0.78; topSetReps = "4"; topSetRpe = "RPE 7.5"; backoffPct = 0.75; backoffReps = "4"; }
+            else if (currentWeek === 3) { topSetPct = 0.82; topSetReps = "3"; topSetRpe = "RPE 8"; backoffPct = 0.78; backoffReps = "4"; }
+            else if (currentWeek === 4) { topSetPct = 0.60; topSetReps = "3"; topSetRpe = "Deload"; backoffPct = 0.55; backoffReps = "3"; }
+            else if (currentWeek === 5) { topSetPct = 0.83; topSetReps = "3"; topSetRpe = "RPE 7.5-8"; backoffPct = 0.78; backoffReps = "3"; }
+            else if (currentWeek === 6) { topSetPct = 0.86; topSetReps = "2"; topSetRpe = "RPE 8"; backoffPct = 0.80; backoffReps = "3"; }
+            else if (currentWeek === 7) { topSetPct = 0.90; topSetReps = "1"; topSetRpe = "RPE 8-8.5"; backoffPct = 0.78; backoffReps = "2"; }
+            else if (currentWeek === 8) { topSetPct = 1.00; topSetReps = "1"; topSetRpe = "PR TEST"; backoffPct = 0.85; backoffReps = "1"; }
+
+            wData.exercises.forEach((ex, idx) => {
+                let card = document.createElement('div');
+                card.className = 'exercise-card';
+
+                let badgeHtml = ex.aesthetic ? `<span class="badge aesthetic">ÄSTHETIK / ZUBEHÖR</span>` : `<span class="badge">HAUPTLIFT</span>`;
+                if (ex.type === 'iso' && !ex.aesthetic) badgeHtml = `<span class="badge">VARIANTE</span>`;
+
+                let targetHtml = '';
+                let setsHtml = '';
+
+                if (ex.type === 'main') {
+                    let baseVal = userRMs[ex.rmKey];
+
+                    for (let s = 1; s <= ex.sets; s++) {
+                        let targetKg;
+                        let repsVal = topSetReps;
+                        let labelDesc = "";
+
+                        if (s === 1) {
+                            targetKg = Math.round((baseVal * topSetPct) / 2.5) * 2.5;
+                            labelDesc = `Top-Satz (${topSetRpe})`;
+                        } else {
+                            targetKg = Math.round((baseVal * backoffPct) / 2.5) * 2.5;
+                            repsVal = backoffReps;
+                            labelDesc = `Back-off ${s-1}`;
+                        }
+
+                        if (currentWeek === 8 && s > 1) {
+                            targetKg = Math.round((baseVal * 0.85) / 2.5) * 2.5;
+                            repsVal = "1";
+                            labelDesc = `Leichter Back-off`;
+                        }
+
+                        if (s === 1) {
+                            targetHtml = `
+                                <div class="auto-target">
+                                    <span>Ziel (Top-Satz): <strong>${targetKg} kg × ${repsVal} Wdh</strong></span>
+                                    <span>${topSetRpe}</span>
+                                </div>
+                            `;
+                        }
+
+                        setsHtml += `
+                            <div class="set-row">
+                                <span class="set-label">Satz ${s}</span>
+                                <input type="number" class="set-input" value="${targetKg}">
+                                <input type="number" class="set-input" value="${repsVal}">
+                                <div class="checkbox-container">
+                                    <input type="checkbox" class="set-check" onclick="triggerTimer(3)">
+                                </div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    targetHtml = `
+                        <div class="auto-target">
+                            <span>Zielbereich: <strong>${ex.reps}</strong></span>
+                            <span>${ex.rpe}</span>
+                        </div>
+                    `;
+
+                    for (let s = 1; s <= ex.sets; s++) {
+                        setsHtml += `
+                            <div class="set-row">
+                                <span class="set-label">Satz ${s}</span>
+                                <input type="number" class="set-input" placeholder="kg">
+                                <input type="number" class="set-input" placeholder="reps">
+                                <div class="checkbox-container">
+                                    <input type="checkbox" class="set-check" onclick="triggerTimer(2)">
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                card.innerHTML = `
+                    <div class="ex-header">
+                        <span class="ex-name">${idx + 1}. ${ex.name}</span>
+                        ${badgeHtml}
+                    </div>
+                    ${targetHtml}
+                    ${setsHtml}
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        let timerInterval = null;
+        let timeLeft = 180;
+
+        function setTimer(seconds) {
+            clearInterval(timerInterval);
+            timeLeft = seconds;
+            updateTimerDisplay();
+            document.getElementById('timerStartBtn').innerText = "START";
+        }
+
+        function triggerTimer(minutes) {
+            setTimer(minutes * 60);
+            toggleTimer();
+        }
+
+        function toggleTimer() {
+            const btn = document.getElementById('timerStartBtn');
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                btn.innerText = "START";
+            } else {
+                btn.innerText = "PAUSE";
+                timerInterval = setInterval(() => {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        btn.innerText = "START";
+                        alert("Satzpause vorbei! Nächster Satz.");
+                    }
+                }, 1000);
+            }
+        }
+
+        function updateTimerDisplay() {
+            let m = Math.floor(timeLeft / 60);
+            let s = timeLeft % 60;
+            document.getElementById('timerDisplay').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
